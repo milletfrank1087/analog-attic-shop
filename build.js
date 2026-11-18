@@ -17,13 +17,19 @@ const DIST = path.join(__dirname, 'dist');
 /*  Site data                                                                 */
 /* -------------------------------------------------------------------------- */
 
+const BUSINESS = JSON.parse(fs.readFileSync(path.join(SRC, 'data', 'business.json'), 'utf8'));
+const B = BUSINESS;
+
 const SITE = {
-  name: 'Analog Attic',
-  email: 'hello@analogattic.example',
-  company: 'Analog Attic Electronics LLC',
-  address: '88 Cassette Row, Austin, TX 78701, USA',
+  name: "Analog Attic",
+  email: BUSINESS.email,
+  company: BUSINESS.legalName,
+  address: BUSINESS.address,
   year: new Date().getFullYear(),
-  desc: 'Boomboxes, cameras, clocks and screens from the golden age of gadgets.',
+  phone: BUSINESS.phone,
+  legalName: BUSINESS.legalName,
+  bankFacing: BUSINESS.bankFacing,
+  desc: "Boomboxes, cameras, clocks and screens from the golden age of gadgets.",
 };
 
 const products = require('./src/data/products.json').products.map((p) => ({
@@ -54,16 +60,20 @@ const collections = [
 const policies = fs
   .readdirSync(path.join(SRC, 'content', 'policies'))
   .map((f) => JSON.parse(fs.readFileSync(path.join(SRC, 'content', 'policies', f), 'utf8')));
-const policyOrder = ['privacy-policy', 'terms-of-service', 'shipping-policy', 'refund-policy', 'contact-information', 'legal-notice'];
+const policyOrder = [
+  'privacy-policy', 'terms-of-service', 'shipping-policy', 'refund-policy', 'payments-and-billing',
+  'contact-information', 'legal-notice', 'cookies-and-privacy-choices', 'about-the-store', 'common-questions',
+];
 policies.sort((a, b) => policyOrder.indexOf(a.slug) - policyOrder.indexOf(b.slug));
 
 const faqs = [
+  ['What will the charge on my statement look like?', `Charges from this store appear as ${B.statementDescriptor}. Compare the amount and date with your order confirmation; if they do not match, email ${B.email} and we will trace it.`],
   ['Are the gadgets fully working?', "Every piece is tested and serviced before it ships, and each product page notes anything cosmetic worth knowing. Vintage electronics are collectibles, so small signs of age are part of the charm. If something isn't right, contact us and we'll make it right."],
-  ['How long does shipping take?', "Orders are packed within 1–2 business days. Standard delivery within the United States then usually takes 3–7 business days, and you'll receive a confirmation email with tracking information when available."],
+  ['How long does shipping take?', `We prepare orders in ${B.handlingDays} business days; carrier transit then usually takes ${B.transitDays} business days, so expect ${B.totalDeliveryDays} business days in total. Orders placed after ${B.cutoff} enter processing the next business day. See Shipping and delivery.`],
   ['How much does shipping cost?', "Shipping costs are calculated at checkout based on your delivery address and the items in your order. You'll see the available shipping options and charges before completing your purchase."],
-  ['Can I return or exchange an item?', "You can request a return within 30 days of delivery for unused items in their original condition. If an item arrives damaged or not as described, please contact us within 7 days with photos. See our Returns & Refunds Policy for details."],
+  ['Can I return or exchange an item?', "You can return unused items in their original packaging within 30 days of delivery, and send them back within 14 days of asking. If an item arrives damaged or not as described, email us with the order number and a description; a photo helps. See Returns, refunds and order cancellations."],
   ['How do you pack fragile electronics?', "Each item is wrapped individually, with screens, lenses and dials protected by foam corners, then packed in a sturdy double-walled box. Batteries are not included unless the product page says so."],
-  ['How can I contact Analog Attic?', "We're happy to help with product questions, condition details, order concerns or general inquiries. Simply visit our Contact Us page and send us a message."],
+  ['How can I contact Analog Attic?', `Email ${B.email} or call ${B.phone} during ${B.supportHours}; we usually reply ${B.responseTime}.` + " We can help with product questions, condition details, order concerns or general inquiries. Simply visit our Contact Us page and send us a message."],
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -136,7 +146,7 @@ function signup(R) {
   <div class="signup__media"><img src="${R}assets/img/newsletter.webp" alt="" width="1600" height="638" loading="lazy" decoding="async"></div>
   <div class="signup__content">
     <h2 class="h2" id="signup-title">Join the Analog Attic Club</h2>
-    <form class="signup-form" data-signup novalidate>
+    <form class="signup-form" data-signup data-signup-to="${BUSINESS.email}" data-brand="${SITE.name}" novalidate>
       <label class="visually-hidden" for="signup-email">Email</label>
       <input id="signup-email" type="email" name="email" placeholder="Email address" autocomplete="email" autocapitalize="off" autocorrect="off" required>
       <button type="submit" aria-label="Sign up">${I.arrow}</button>
@@ -165,20 +175,25 @@ function footer(R) {
     ${col('Help', [
       ['Contact Us', `${R}policies/contact-information/`],
       ['FAQ', `${R}pages/faq/`],
-      ['Shipping Policy', `${R}policies/shipping-policy/`],
+      ['Shipping &amp; Delivery', `${R}policies/shipping-policy/`],
       ['Returns &amp; Refunds', `${R}policies/refund-policy/`],
+      ['Payments &amp; Billing', `${R}policies/payments-and-billing/`],
+      ['Common Questions', `${R}policies/common-questions/`],
     ])}
     ${col('About', [
       ['Our Story', `${R}pages/about/`],
       ['Privacy Policy', `${R}policies/privacy-policy/`],
       ['Terms of Service', `${R}policies/terms-of-service/`],
-      ['Contact Us', `${R}pages/contact/`],
+      ['Contact Details', `${R}policies/contact-information/`],
+      ['About the Store', `${R}policies/about-the-store/`],
     ])}
     <div class="footer-info">
       <h4 class="footer-info__title">Business Information</h4>
-      <p>${SITE.company}</p>
-      <p>${SITE.address}</p>
-      <p><a href="mailto:${SITE.email}">${SITE.email}</a></p>
+      <p>${BUSINESS.legalName}</p>
+      <p>${BUSINESS.address}</p>
+      <p><a href="mailto:${BUSINESS.email}">${BUSINESS.email}</a></p>
+      <p><a href="tel:${BUSINESS.phone.replace(/[^\d+]/g, '')}">${BUSINESS.phone}</a></p>
+      <p>${BUSINESS.supportHours}</p>
     </div>
   </div>
   <div class="footer__utilities">
@@ -469,7 +484,8 @@ function aboutPage() {
     <div class="band__text">
       <h1 class="h2">Great Gadgets Never Really Go Out of Style.</h1>
       <div class="rte rte--narrow">
-        <p>Some of the best parts of a home are the sounds and glows we grew up with: a cassette clicking into place, a camera shutter, the quiet tick of a mantel clock.</p>
+        <p class="about-lede">${SITE.name} is a small online shop for boomboxes, cameras, clocks and screens, sold to customers across ${B.serviceArea}.</p>
+        <p> are the sounds and glows we grew up with: a cassette clicking into place, a camera shutter, the quiet tick of a mantel clock.</p>
         <p>Those small rituals are what inspire <strong>Analog Attic</strong>.</p>
         <p>We believe technology used to be built to be looked at, touched and kept. That's why we bring together boomboxes, cassette players, cameras, projectors, clocks and screens chosen for honest design, satisfying controls and the way they age.</p>
         <p><strong>That's where Analog Attic comes in.</strong></p>
@@ -482,7 +498,7 @@ function aboutPage() {
     </div>
   </div>
 </section>`;
-  return layout({ depth, title: `About ${SITE.name} | Vintage Electronics & Decor`, desc: 'Learn the story behind Analog Attic and our boomboxes, cameras, clocks and screens from the golden age of gadgets.', active: 'about', body });
+  return layout({ depth, title: `About ${SITE.name}`, desc: `Who we are, how we ship and how to reach ${SITE.name}.`, active: 'about', body });
 }
 
 function faqPage() {
@@ -509,15 +525,18 @@ function contactPage() {
         <p>At Analog Attic, we're here to make shopping for vintage gadgets simple and stress-free.</p>
         <p>Whether you have questions about a product, its condition, shipping, or an existing order, we're always happy to help.</p>
         <p>Send us a message using the contact form below, and our team will get back to you as soon as possible.</p>
-        <p><strong>Company Name:</strong> ${SITE.company}</p>
-        <p><strong>Business Address:</strong> ${SITE.address}</p>
-        <p><strong>Email:</strong> <a href="mailto:${SITE.email}">${SITE.email}</a></p>
+        <p><strong>Company Name:</strong> ${BUSINESS.legalName}</p>
+        <p><strong>Business Address:</strong> ${BUSINESS.address}</p>
+        <p><strong>Email:</strong> <a href="mailto:${BUSINESS.email}">${BUSINESS.email}</a></p>
+        <p><strong>Phone:</strong> <a href="tel:${BUSINESS.phone.replace(/[^\d+]/g, '')}">${BUSINESS.phone}</a></p>
+        <p><strong>Hours:</strong> ${BUSINESS.supportHours}</p>
       </div>
     </div>
   </div>
 </section>
 <section class="contact-form-section">
-  <form class="contact-form" data-contact novalidate>
+  <p class="contact-form__intro">Send a message and it opens in your email app, ready to go to ${BUSINESS.email}. Usual first reply: ${BUSINESS.responseTime}.</p>
+  <form class="contact-form" data-contact data-contact-to="${BUSINESS.email}" data-brand="${SITE.name}" novalidate>
     <div class="contact-form__row">
       ${field('cf-name', 'name', 'Name', 'text', 'autocomplete="name"')}
       ${field('cf-email', 'email', 'Email<span aria-hidden="true">*</span>', 'email', 'autocomplete="email" autocapitalize="off" spellcheck="false" required')}
@@ -628,4 +647,23 @@ function build() {
   console.log(`Built ${pages} pages into dist/ in ${Date.now() - t0}ms`);
 }
 
+function assertBankReady() {
+  if (!SITE.bankFacing) return;
+  const problems = [];
+  for (const [key, value] of Object.entries(SITE)) {
+    if (typeof value === 'string' && /\{\{|\.example\b/.test(value)) problems.push(`${key}: ${value}`);
+  }
+  if (!SITE.phone) problems.push('phone is empty');
+  if (!SITE.legalName) problems.push('legalName is empty');
+  const policyText = policies.map((p) => p.html).join(' ');
+  if (/\{\{/.test(policyText)) problems.push('policies contain {{placeholders}}');
+  if (/\.example\b/.test(policyText)) problems.push('policies contain .example addresses');
+  if (/demonstration storefront/i.test(policyText)) problems.push('policies still call the store a demonstration');
+  if (problems.length) {
+    console.error('\nBank-facing shop is not ready:\n  - ' + problems.join('\n  - ') + '\n');
+    process.exit(1);
+  }
+}
+
+assertBankReady();
 build();
